@@ -55,7 +55,8 @@ define(function() {
 		},
 		activeKeys = [],
 		activeBindings = {},
-		keyBindingGroups = [];
+		keyBindingGroups = [],
+		callbacks = [];
 
 	//adds keys to the active keys array
 	document.addEventListener('keydown', function(event) {
@@ -142,6 +143,15 @@ define(function() {
 		var bindingStack = queryActiveBindings(),
 			spentKeys = [],
 			output;
+
+		//run registered hooks
+		if(callbacks.length) {
+			for(var i = 0; i < callbacks.length; i =+ 1) {
+				if(!callbacks[i](event, bindingStack, activeKeys)) {
+					return false;
+				}
+			}
+		}
 
 		//loop through each active binding
 		for (var bindingIndex = 0; bindingIndex < bindingStack.length; bindingIndex += 1) {
@@ -435,11 +445,26 @@ define(function() {
 		return activeKeys;
 	}
 
+	function register(callback) {
+		if(typeof callback === 'function') {
+			callbacks.push(callback);
+
+			return clear;
+		} else {
+			return false;
+		}
+
+		function clear() {
+			delete callbacks[callbacks.indexOf(callback)];
+		}
+	}
+
 	return {
 		"bind": {
 			"key": bindKey,
 			"axis": bindAxis
 		},
+		"register": register,
 		"activeKeys": getActiveKeys,
 		"unbind": {
 			"key": unbindKey
